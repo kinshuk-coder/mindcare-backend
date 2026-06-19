@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+sentence-transformers
+pinecone
+pymongo
+openai
+python-dotenv
