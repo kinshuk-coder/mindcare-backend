@@ -60,7 +60,7 @@ app = FastAPI(title="MindCare API")
 # allowing the backend to communicate to the frontend
 origins = [
     "http://localhost:5173",
-    "https://mindcare-frontend-teal.vercel.app/" 
+    "https://mindcare-frontend-teal.vercel.app" 
 ]
 app.add_middleware(
     CORSMiddleware,
