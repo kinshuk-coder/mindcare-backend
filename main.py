@@ -16,7 +16,7 @@ CRISIS_TRIGGERS = [
     "hurt myself", "self harm", "no reason to live", "better off dead","end my life"
 ]
 
-#function to detect crisis 
+# function to detect crisis 
 def detect_crisis(user_input):
     text = user_input.lower()
     for TRIGGER in CRISIS_TRIGGERS:
@@ -24,24 +24,24 @@ def detect_crisis(user_input):
             return True
     return False    
 
-#api key is added through load_dotenv()
+# api keys are added through load_dotenv()
 load_dotenv()
 
-#intiailizing AsyncOpenAI object 
+# intiailizing AsyncOpenAI object 
 client = AsyncOpenAI(base_url="https://api.groq.com/openai/v1")
 
-#initializing mongo db client
+# initializing mongo db client
 mc = MongoClient(os.getenv("MONGODB_URI"))
 history_collection = mc["mindcare_db"]
 history = history_collection["chat_sessions"]
 
 
-#initializing pineconde client
+# initializing pineconde client
 pc = Pinecone(os.getenv("PINECONE_API_KEY"))
 pinecone_index = pc.Index("mindcare-memory")
 
 
-#initializing the vector embedder
+# initializing the vector embedder
 def vector_embedder(s : str):
     hf_api_key = os.getenv("HF_API_KEY")
     api_url = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
@@ -57,9 +57,14 @@ def vector_embedder(s : str):
 #intializing FastAPI object
 app = FastAPI(title="MindCare API")
 
+# allowing the backend to communicate to the frontend
+origins = [
+    "http://localhost:5173",
+    "https://mindcare-frontend-teal.vercel.app/" 
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials = True,
     allow_headers = ["*"],
     allow_methods = ["*"],
@@ -67,7 +72,7 @@ app.add_middleware(
 )
 
 
-#schema of both user and Ai using pydantic BaseModel
+# schema of both user and Ai using pydantic BaseModel
 class UserQuery(BaseModel):
     user_message : str
     session_id : str = "default_session"
@@ -79,7 +84,7 @@ class AiResponse(BaseModel):
 
 
 
-#FastAPI post endpoint
+# FastAPI post chat endpoint
 @app.post("/chat")
 async def chat_endpoint(user_query : UserQuery):
 
@@ -87,6 +92,7 @@ async def chat_endpoint(user_query : UserQuery):
     try:
         session = user_query.session_id
 
+        # retreiving the short term memory from mongodb database
         doc = history.find_one({"session_id":session})
         if(doc): session_history = doc["messages"]
         else: session_history = []
@@ -95,6 +101,7 @@ async def chat_endpoint(user_query : UserQuery):
         
         short_term_history = " | ".join([f"{msg['role']}: {msg['content']}" for msg in last_10_messages])
 
+        # crisis detection
         if(detect_crisis(user_query.user_message)):
             emergency_reply = "I am an AI, and it sounds like you are going through an incredibly difficult time right now. Your safety is the most important thing. Please reach out to a human who can help. In India, you can call the Kiran Helpline at 1800-599-0019 or AASRA at 9820466726. You do not have to go through this alone."
 
@@ -110,7 +117,7 @@ async def chat_endpoint(user_query : UserQuery):
                 upsert = True
             )
 
-            #return the correct schema
+            # return the correct schema
             return {
                 "ai_message" : emergency_reply,
                 "intent" : "CRISIS_EMERGENCY",
@@ -118,6 +125,7 @@ async def chat_endpoint(user_query : UserQuery):
 
             }
         
+        # searching the pinecone database for k=10 nearest results that are semantically related
         query_vector = vector_embedder(user_query.user_message)
         
         res = pinecone_index.query(vector=query_vector,
@@ -126,14 +134,14 @@ async def chat_endpoint(user_query : UserQuery):
                                     include_metadata = True)
         
 
-        #adding the related messags to the variable chat_history
+        # adding the related messags to the variable chat_history
         chat_history = ""
         
         for match in res["matches"]:
             chat_history += match["metadata"]["text"] + ' | '
 
-        #calling client.beta.chat.completions.parse method from pydantic to force the AI to generate the response in strict json schema
-        #using await so that other processes does not stop till the response is recieved
+        # calling client.beta.chat.completions.parse method from pydantic to force the AI to generate the response in strict json schema
+        # using await so that other processes does not stop till the response is recieved
         completion = await client.beta.chat.completions.parse(
             model ="openai/gpt-oss-120b",
             messages = [ {"role":"system","content": f"You are an AI mental health support assistant, if you do not know the exact answer just say 'I don't know' instead of guessing the answer. These are the previous chat history regarding the current user message, these contains the messages that are semantically related to current message of user, it is provided to you so that you can understand the context of the user's current message : {chat_history} | \n\n These are the last few messages of the user, also use these to understand the context of the recent conversation: {short_term_history}"
@@ -141,10 +149,10 @@ async def chat_endpoint(user_query : UserQuery):
             temperature = 0.2,
             response_format = AiResponse
         )
-        #parse the json file to python dictionary
+        # parse the json file to python dictionary
         ai_data = completion.choices[0].message.parsed
 
-        #save and add the interaction to the database for short term as well as long term purposes
+        # save and add the interaction to the database for short term as well as long term purposes
         interaction = f"user:{user_query.user_message} | assistant:{ai_data.ai_message}"
         interaction_vector = vector_embedder(interaction)
 
@@ -164,7 +172,7 @@ async def chat_endpoint(user_query : UserQuery):
                 upsert = True
             )
 
-        #return the correct schema
+        # return the correct schema
         return {
             "ai_message" : ai_data.ai_message,
             "intent" : ai_data.intent,
@@ -175,7 +183,7 @@ async def chat_endpoint(user_query : UserQuery):
         raise HTTPException(status_code=500,detail=f"Ai processing error:{str(e)}")
     
     
-
+# get endpoint to retrieve history for a specific session_id
 @app.get("/history/{session_id}")
 def get_chat_history(session_id: str):
     
