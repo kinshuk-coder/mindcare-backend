@@ -8,7 +8,7 @@ from pymongo import MongoClient
 from pinecone import Pinecone
 from fastapi.middleware.cors import CORSMiddleware
 import requests
-import traceback
+
 
 
 CRISIS_TRIGGERS = [
@@ -42,18 +42,17 @@ pinecone_index = pc.Index("mindcare-memory")
 
 
 #initializing the vector embedder
-def vector_embedder(text: str):
-    hf_token = os.getenv("HF_API_KEY")
+def vector_embedder(s : str):
+    hf_api_key = os.getenv("HF_API_KEY")
     api_url = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
-    headers = {"Authorization": f"Bearer {hf_token}"}
-    
-    response = requests.post(api_url, headers=headers, json={"inputs": text})
-    
-    # HuggingFace returns a list of floats directly for this model
-    if response.status_code == 200:
+    headers = {"Authorization":f"Bearer {hf_api_key}"}
+
+    response = requests.post(api_url,headers=headers,json={"input":s})
+
+    if(response.status_code==200):
         return response.json()
     else:
-        raise Exception(f"Failed to generate embedding: {response.text}")
+        raise Exception(f"Failed to connect to hugging face:{response.text}")
 
 #intializing FastAPI object
 app = FastAPI(title="MindCare API")
@@ -172,12 +171,7 @@ async def chat_endpoint(user_query : UserQuery):
             "confidence_score" : ai_data.confidence_score
         }
     except Exception as e:
-        # This grabs the exact line of code that crashed
-        error_trace = traceback.format_exc()
-        print(f"🔥 CRASH REPORT:\n{error_trace}")
-        
-        # This sends the actual error directly to your React app
-        raise HTTPException(status_code=500, detail=str(error_trace))
+        raise HTTPException(status_code=500,detail=f"AI processing error:{str(e)}")
     
     
 
