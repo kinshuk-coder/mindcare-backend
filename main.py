@@ -47,7 +47,7 @@ def vector_embedder(s : str):
     api_url = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
     headers = {"Authorization":f"Bearer {hf_api_key}"}
 
-    response = requests.post(api_url,headers=headers,json={"inputs":s})
+    response = requests.post(api_url,headers=headers,json={"input":s})
 
     if(response.status_code==200):
         return response.json()
@@ -171,7 +171,8 @@ async def chat_endpoint(user_query : UserQuery):
             "confidence_score" : ai_data.confidence_score
         }
     except Exception as e:
-        raise HTTPException(status_code=500,detail=f"AI processing error:{str(e)}")
+        print(f"Critical Error:{str(e)}")
+        raise HTTPException(status_code=500,detail=f"Ai processing error:{str(e)}")
     
     
 
