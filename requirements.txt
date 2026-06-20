@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 pydantic
-sentence-transformers
+requests
 pinecone
 pymongo
 openai

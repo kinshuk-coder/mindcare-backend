@@ -7,7 +7,7 @@ import uuid
 from pymongo import MongoClient
 from pinecone import Pinecone
 from fastapi.middleware.cors import CORSMiddleware
-from sentence_transformers import SentenceTransformer
+import requests
 
 
 CRISIS_TRIGGERS = [
@@ -41,7 +41,18 @@ pinecone_index = pc.Index("mindcare-memory")
 
 
 #initializing the vector embedder
-vector_embedder = SentenceTransformer("all-MiniLM-L6-v2")
+def vector_embedder(text: str):
+    hf_token = os.getenv("HF_API_KEY")
+    api_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    
+    response = requests.post(api_url, headers=headers, json={"inputs": text})
+    
+    # HuggingFace returns a list of floats directly for this model
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"Failed to generate embedding: {response.text}")
 
 #intializing FastAPI object
 app = FastAPI(title="MindCare API")
@@ -107,7 +118,7 @@ async def chat_endpoint(user_query : UserQuery):
 
             }
         
-        query_vector = vector_embedder.encode(user_query.user_message).tolist()
+        query_vector = vector_embedder(user_query.user_message)
         
         res = pinecone_index.query(vector=query_vector,
                                     top_k = 10,
@@ -135,8 +146,8 @@ async def chat_endpoint(user_query : UserQuery):
 
         #save and add the interaction to the database for short term as well as long term purposes
         interaction = f"user:{user_query.user_message} | assistant:{ai_data.ai_message}"
-        interaction_vector = vector_embedder.encode(interaction).tolist()
-        
+        interaction_vector = vector_embedder(interaction)
+
         pinecone_index.upsert(vectors=[
             {"id":str(uuid.uuid4()),
                 "values": interaction_vector,
