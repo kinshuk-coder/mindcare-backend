@@ -3,8 +3,8 @@
 MindCare is a full-stack, RAG-driven (Retrieval-Augmented Generation) AI assistant designed to provide conversational mental health support. Built with a decoupled microservice architecture, it leverages high-speed LPU inference and serverless vector databases to maintain long-term semantic memory of user sessions.
 
 ##  Live Demo
-* **Frontend:** [mindcare-frontend-teal.vercel.app](mindcare-frontend-teal.vercel.app)
-* **Backend API:** [https://mindcare-backend-2cv2.onrender.com](https://mindcare-backend-2cv2.onrender.com)
+* **Frontend:** [mindcare-frontend-teal.vercel.app](https://mindcare-frontend-teal.vercel.app/)
+* **Backend API:** [mindcare-backend-2cv2.onrender.com](https://mindcare-backend-2cv2.onrender.com)
 
 ##  Architecture & Tech Stack
 
@@ -28,7 +28,7 @@ This project was intentionally engineered to be entirely cloud-native and statel
 * **Compute Offloading to Prevent OOM Errors:** By stripping local `sentence-transformers` from the backend and routing embedding generation through Hugging Face's modernized router (`router.huggingface.co`), the backend's RAM requirement dropped from ~800MB to under 100MB, allowing flawless execution on free-tier cloud containers.
 * **Stateless RAG Implementation:** The server retains zero local state. On every request, it fetches the user's raw history from MongoDB, pulls semantically relevant past interactions from Pinecone, and injects both into the LLM system prompt to prevent context-window overflow while maintaining long-term conversational memory.
 
-## ⚙️ Local Setup & Installation
+##  Local Setup & Installation
 
 **1. Clone the repository**
 ```bash
@@ -55,5 +55,5 @@ HF_API_KEY=your_huggingface_read_token
 uvicorn main:app --reload
 ```
 
-## 👨‍💻 Author
+##  Author
 * **Kinshuk** - Sole Architect & Developer
