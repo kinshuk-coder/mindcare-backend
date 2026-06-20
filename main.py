@@ -8,6 +8,7 @@ from pymongo import MongoClient
 from pinecone import Pinecone
 from fastapi.middleware.cors import CORSMiddleware
 import requests
+import traceback
 
 
 CRISIS_TRIGGERS = [
@@ -171,7 +172,12 @@ async def chat_endpoint(user_query : UserQuery):
             "confidence_score" : ai_data.confidence_score
         }
     except Exception as e:
-        raise HTTPException(status_code=500,detail=f"AI processing error:{str(e)}")
+        # This grabs the exact line of code that crashed
+        error_trace = traceback.format_exc()
+        print(f"🔥 CRASH REPORT:\n{error_trace}")
+        
+        # This sends the actual error directly to your React app
+        raise HTTPException(status_code=500, detail=str(error_trace))
     
     
 
