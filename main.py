@@ -1,3 +1,4 @@
+# importing the necessary modules and functions 
 from fastapi import FastAPI,HTTPException
 from pydantic import BaseModel, Field
 from openai import AsyncOpenAI
