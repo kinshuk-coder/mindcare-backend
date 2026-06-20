@@ -44,7 +44,7 @@ pinecone_index = pc.Index("mindcare-memory")
 #initializing the vector embedder
 def vector_embedder(text: str):
     hf_token = os.getenv("HF_API_KEY")
-    api_url = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+    api_url = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
     headers = {"Authorization": f"Bearer {hf_token}"}
     
     response = requests.post(api_url, headers=headers, json={"inputs": text})
