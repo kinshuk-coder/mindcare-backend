@@ -47,7 +47,7 @@ def vector_embedder(s : str):
     api_url = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2/pipeline/feature-extraction"
     headers = {"Authorization":f"Bearer {hf_api_key}"}
 
-    response = requests.post(api_url,headers=headers,json={"input":s})
+    response = requests.post(api_url,headers=headers,json={"inputs":s})
 
     if(response.status_code==200):
         return response.json()
