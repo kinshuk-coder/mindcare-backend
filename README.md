@@ -23,6 +23,20 @@ This project was intentionally engineered to be entirely cloud-native and statel
 * **Vector Database (Pinecone):** Serverless dense vector indexing (384 dimensions) for semantic search and contextual memory retrieval.
 * **Document Database (MongoDB Atlas):** Persistent NoSQL storage mapping 1-to-1 with the frontend's JSON state management.
 
+##  Understanding the RAG Architecture
+
+Retrieval-Augmented Generation (RAG) is the core engine that gives MindCare its long-term memory. 
+
+**Why we used RAG:**
+Standard LLMs have strictly limited "context windows" and charge per token. If a user has been chatting with MindCare for six months, sending their entire conversation history to the AI for every single message would cause out-of-memory errors and massive API costs. RAG solves this by only fetching the most *semantically relevant* past memories, allowing the AI to "remember" things from weeks ago without needing to read the entire historical transcript.
+
+**Where we used RAG (The Data Flow):**
+1. **User Input:** The frontend sends a new chat message to the FastAPI backend.
+2. **Vectorization:** The backend routes the text to the Hugging Face Inference API (`all-MiniLM-L6-v2`), which converts the sentence into a 384-dimensional mathematical vector (embedding).
+3. **Retrieval (Pinecone):** We query the serverless Pinecone vector database with this new vector to find the top 10 most mathematically similar (contextually relevant) past conversations.
+4. **Context Injection:** The backend fetches the user's recent short-term history from MongoDB, combines it with the long-term memories retrieved from Pinecone, and injects both into a hidden system prompt.
+5. **Generation (OpenAI):** The `gpt-oss-120b` model reads the injected memories, understands the long-term context of the user, and generates a highly personalized response.
+
 ##  Key Engineering Decisions
 
 * **Compute Offloading to Prevent OOM Errors:** By stripping local `sentence-transformers` from the backend and routing embedding generation through Hugging Face's modernized router (`router.huggingface.co`), the backend's RAM requirement dropped from ~800MB to under 100MB, allowing flawless execution on free-tier cloud containers.
