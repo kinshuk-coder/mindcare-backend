@@ -144,7 +144,7 @@ async def chat_endpoint(user_query : UserQuery):
         # calling client.beta.chat.completions.parse method from pydantic to force the AI to generate the response in strict json schema
         # using await so that other processes does not stop till the response is recieved
         completion = await client.beta.chat.completions.parse(
-            model ="openai/gpt-oss-120b",
+            model ="llama-3.1-8b-instant",
             messages = [ {"role":"system","content": f"You are an AI mental health support assistant, if you do not know the exact answer just say 'I don't know' instead of guessing the answer. These are the previous chat history regarding the current user message, these contains the messages that are semantically related to current message of user, it is provided to you so that you can understand the context of the user's current message : {chat_history} | \n\n These are the last few messages of the user, also use these to understand the context of the recent conversation: {short_term_history}"
             },{"role" : "user","content":user_query.user_message} ],
             temperature = 0.2,
