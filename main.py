@@ -192,4 +192,7 @@ def get_chat_history(session_id: str):
     if(doc): return doc["messages"]
     else: return []
     
+@app.get("/api/ping")    
+def ping():
+    return {"status":"ok"}
 
